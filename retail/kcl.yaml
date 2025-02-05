@@ -8,6 +8,9 @@ spec:
     kind: RetailStoreSampleAppStack
     spec:
       name: string
+    status:
+      networkingInfo:
+        vpcID: ${vpc.status.vpcID}
   resources:
   - id: vpc
     template:
@@ -26,63 +29,128 @@ spec:
           value: ec2-controller
         - key: Name
           value: vpc-string
-  - id: retailappPrivateSubnetaz1
+  - id: appprivatesubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appPrivateSubnetaz1
+        name: appprivatesubnetaz1
       spec:
         cidrBlock: '10.0.0.0/24'
-        vpcRef:
-          from:
-            name: vpc-string
+        vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: false
         tags:
         - key: ManagedBy
           value: ec2-controller
-  - id: retailappPrivateSubnetaz2
+  - id: appprivatesubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appPrivateSubnetaz2
+        name: appprivatesubnetaz2
       spec:
         cidrBlock: '10.0.1.0/24'
-        vpcRef:
-          from:
-            name: vpc-string
+        vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: false
         tags:
         - key: ManagedBy
           value: ec2-controller
-  - id: retailpublicSubnetaz1
+  - id: publicsubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicSubnetaz1
+        name: publicsubnetaz1
       spec:
         cidrBlock: '10.0.2.0/24'
-        vpcRef:
-          from:
-            name: vpc-string
+        vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: true
         tags:
         - key: ManagedBy
           value: ec2-controller
-  - id: retailpublicSubnetaz2
+  - id: publicsubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicSubnetaz2
+        name: publicsubnetaz2
       spec:
         cidrBlock: '10.0.3.0/24'
-        vpcRef:
-          from:
-            name: vpc-string
+        vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: true
         tags:
         - key: ManagedBy
           value: ec2-controller
+  - id: internetgateway
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: InternetGateway
+      metadata:
+        name: internetgatewayretail
+      spec:
+        vpc: ${vpc.status.vpcID}
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: internetgatewayretail
+  - id: routetablepublic
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: RouteTable
+      metadata:
+        name: routetablepublic
+      spec:
+        vpcID: ${vpc.status.vpcID}
+        routes:
+        - destinationCIDRBlock: '0.0.0.0/0'
+          gatewayID: ${internetgateway.status.internetGatewayID}
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: routetablepublic-retail
+  - id: routetableprivate
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: RouteTable
+      metadata:
+        name: routetableprivate
+      spec:
+        vpcID: ${vpc.status.vpcID}
+        routes:
+        - destinationCIDRBlock: '0.0.0.0/0'
+          natGatewayID: ${natgateway.status.natGatewayID}
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: routetableprivate-retail
+  - id: natgateway
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: NATGateway
+      metadata:
+        name: natgatewayretail
+      spec:
+        subnetRef:
+          from:
+            name: appprivatesubnetaz1
+        allocationID: ${elasticipaddress.status.allocationID}
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: natgatewayretail
+  - id: elasticipaddress
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: ElasticIPAddress
+      metadata:
+        name: elasticipaddressretail
+      spec:
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: elasticipaddressretail

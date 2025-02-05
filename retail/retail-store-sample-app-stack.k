@@ -15,6 +15,11 @@ spec = {
         spec = {
             name = "string"
         }
+        status = {
+            networkingInfo = {
+                vpcID = r"""${vpc.status.vpcID}"""
+            }
+        }        
     }
 
     resources = [
@@ -47,7 +52,7 @@ spec = {
     ]
     resources += [
         {
-            id = my_config.project_name + subnet_config.name
+            id = subnet_config.name
             template = {
                 apiVersion = "ec2.services.k8s.aws/v1alpha1"
                 kind = "Subnet"
@@ -57,11 +62,7 @@ spec = {
                 spec = {
                     availabilityZone = subnet_config.az
                     cidrBlock = subnet_config.cidr
-                    vpcRef = {
-                        from = {
-                            name = "vpc-${schema.spec.name}"
-                        }
-                    }
+                    vpcID = r"""${vpc.status.vpcID}"""
                     mapPublicIPOnLaunch =  True if subnet_config.type == "public"  else False
                     tags = [
                         {
@@ -72,5 +73,123 @@ spec = {
                 }
             }
         } for subnet_config in my_config.subnet_configs
+    ] 
+    resources += [
+        {
+            id = "internetgateway"
+            template = {
+                apiVersion = "ec2.services.k8s.aws/v1alpha1"
+                kind = "InternetGateway"
+                metadata = {
+                    name = "internetgateway" + my_config.project_name
+                }
+                spec = {
+                    vpc = r"""${vpc.status.vpcID}"""
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = "ec2-controller"
+                        }
+                        {
+                            key = "Name" 
+                            value =  metadata.name
+
+                        }
+                    ]
+                }
+            }
+        } 
+    ]     
+    resources += [
+        {
+            id = route_config.name
+            template = {
+                apiVersion = "ec2.services.k8s.aws/v1alpha1"
+                kind = "RouteTable"
+                metadata = {
+                    name = route_config.name
+                }
+                spec = {
+                    vpcID = r"""${vpc.status.vpcID}"""
+                    routes = [
+                        {
+                            destinationCIDRBlock = "0.0.0.0/0"
+                            if route_config.subnet_type == "public" : 
+                                gatewayID = r"""${internetgateway.status.internetGatewayID}"""
+                            else:
+                                natGatewayID = r"""${natgateway.status.natGatewayID}"""
+                        }
+                    ]                    
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = "ec2-controller"
+                        }
+                        {
+                            key = "Name" 
+                            value =  metadata.name + "-" + my_config.project_name
+
+                        }
+                    ]
+                }
+            }
+        } for route_config in my_config.routeTableConfig
+    ]
+    
+    resources += [
+        {
+            id = "natgateway"
+            template = {
+                apiVersion = "ec2.services.k8s.aws/v1alpha1"
+                kind = "NATGateway"
+                metadata = {
+                    name = "natgateway" + my_config.project_name
+                }
+                spec = {
+                    subnetRef = { 
+                        from = {
+                            name = my_config.subnet_configs[0].name
+                        }
+                    } 
+                    allocationID = r"""${elasticipaddress.status.allocationID}"""                 
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = "ec2-controller"
+                        }
+                        {
+                            key = "Name" 
+                            value =  metadata.name
+
+                        }
+                    ]
+                }
+            }
+        } 
+    ]      
+    resources += [
+        {
+            id = "elasticipaddress"
+            template = {
+                apiVersion = "ec2.services.k8s.aws/v1alpha1"
+                kind = "ElasticIPAddress"
+                metadata = {
+                    name = "elasticipaddress" + my_config.project_name
+                }
+                spec = {                  
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = "ec2-controller"
+                        }
+                        {
+                            key = "Name" 
+                            value =  metadata.name
+
+                        }
+                    ]
+                }
+            }
+        } 
     ] 
 }
