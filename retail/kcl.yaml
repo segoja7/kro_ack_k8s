@@ -13,6 +13,8 @@ spec:
         vpcID: ${vpc.status.vpcID}
   resources:
   - id: vpc
+    readyWhen:
+    - ${vpc.status.state == "available"}
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: VPC
@@ -26,7 +28,7 @@ spec:
         instanceTenancy: default
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: vpc-string
   - id: appprivatesubnetaz1
@@ -36,12 +38,15 @@ spec:
       metadata:
         name: appprivatesubnetaz1
       spec:
+        availabilityZone: us-east-1a
         cidrBlock: '10.0.0.0/24'
         vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: false
+        routeTables:
+        - ${routetableprivate.status.routeTableID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
   - id: appprivatesubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -49,12 +54,15 @@ spec:
       metadata:
         name: appprivatesubnetaz2
       spec:
+        availabilityZone: us-east-1b
         cidrBlock: '10.0.1.0/24'
         vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: false
+        routeTables:
+        - ${routetableprivate.status.routeTableID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
   - id: publicsubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -62,12 +70,15 @@ spec:
       metadata:
         name: publicsubnetaz1
       spec:
+        availabilityZone: us-east-1a
         cidrBlock: '10.0.2.0/24'
         vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: true
+        routeTables:
+        - ${routetablepublic.status.routeTableID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
   - id: publicsubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -75,12 +86,15 @@ spec:
       metadata:
         name: publicsubnetaz2
       spec:
+        availabilityZone: us-east-1b
         cidrBlock: '10.0.3.0/24'
         vpcID: ${vpc.status.vpcID}
         mapPublicIPOnLaunch: true
+        routeTables:
+        - ${routetablepublic.status.routeTableID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
   - id: internetgateway
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -91,7 +105,7 @@ spec:
         vpc: ${vpc.status.vpcID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: internetgatewayretail
   - id: routetablepublic
@@ -107,7 +121,7 @@ spec:
           gatewayID: ${internetgateway.status.internetGatewayID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: routetablepublic-retail
   - id: routetableprivate
@@ -123,7 +137,7 @@ spec:
           natGatewayID: ${natgateway.status.natGatewayID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: routetableprivate-retail
   - id: natgateway
@@ -139,7 +153,7 @@ spec:
         allocationID: ${elasticipaddress.status.allocationID}
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: natgatewayretail
   - id: elasticipaddress
@@ -151,6 +165,107 @@ spec:
       spec:
         tags:
         - key: ManagedBy
-          value: ec2-controller
+          value: ec2.services.k8s.aws/v1alpha1
         - key: Name
           value: elasticipaddressretail
+  - id: clusterrole
+    template:
+      apiVersion: iam.services.k8s.aws/v1alpha1
+      kind: Role
+      metadata:
+        name: clusterroleretail
+      spec:
+        name: clusterroleretail
+        policies:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        assumeRolePolicyDocument: |-
+          {
+                                  "Version": "2012-10-17",
+                                  "Statement": [
+                                    {
+                                      "Effect": "Allow",
+                                      "Principal": {
+                                        "Service": "eks.amazonaws.com"
+                                      },
+                                      "Action": "sts:AssumeRole"
+                                    }
+                                  ]
+                                }
+        tags:
+        - key: ManagedBy
+          value: iam.services.k8s.aws/v1alpha1
+        - key: Name
+          value: clusterroleretail
+  - id: clusternoderole
+    template:
+      apiVersion: iam.services.k8s.aws/v1alpha1
+      kind: Role
+      metadata:
+        name: clusternoderoleretail
+      spec:
+        name: clusternoderoleretail
+        policies:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                            \"Effect\": \"Allow\",\n                            \"Principal\": {\n                                \"Service\": \"ec2.amazonaws.com\"\n                            },\n                            \"Action\": \"sts:AssumeRole\"\n                            }\n                        ]\n                        }\n                        "
+        tags:
+        - key: ManagedBy
+          value: iam.services.k8s.aws/v1alpha1
+        - key: Name
+          value: clusternoderoleretail
+  - id: clusteradminrole
+    template:
+      apiVersion: iam.services.k8s.aws/v1alpha1
+      kind: Role
+      metadata:
+        name: clusteradminroleretail
+      spec:
+        name: clusteradminroleretail
+        policies:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                                \"Sid\": \"AllowEksAuthToAssumeRoleForPodIdentity\",\n                                \"Effect\": \"Allow\",\n                                \"Principal\": {\n                                    \"Service\": \"pods.eks.amazonaws.com\"\n                                },\n                                \"Action\": [\n                                    \"sts:AssumeRole\",\n                                    \"sts:TagSession\"\n                                ]\n                            }\n                        ]\n                        }\n                        "
+        tags:
+        - key: ManagedBy
+          value: iam.services.k8s.aws/v1alpha1
+        - key: Name
+          value: clusteradminroleretail
+  - id: cluster
+    readyWhen:
+    - ${cluster.status.status == "ACTIVE"}
+    template:
+      apiVersion: eks.services.k8s.aws/v1alpha1
+      kind: Cluster
+      metadata:
+        name: clusterretail
+      spec:
+        name: clusterretail
+        accessConfig:
+          authenticationMode: API_AND_CONFIG_MAP
+        roleARN: ${clusterrole.status.ackResourceMetadata.arn}
+        resourcesVPCConfig:
+          endpointPrivateAccess: false
+          endpointPublicAccess: true
+          subnetIDs:
+          - ${publicsubnetaz1.status.subnetID}
+          - ${publicsubnetaz2.status.subnetID}
+  - id: clusternodegroup
+    template:
+      apiVersion: eks.services.k8s.aws/v1alpha1
+      kind: Nodegroup
+      metadata:
+        name: clusternodegroupretail
+      spec:
+        name: clusternodegroupretail
+        diskSize: 20
+        clusterName: ${cluster.spec.name}
+        subnets:
+        - ${publicsubnetaz1.status.subnetID}
+        - ${publicsubnetaz2.status.subnetID}
+        nodeRole: ${clusternoderole.status.ackResourceMetadata.arn}
+        updateConfig:
+          maxUnavailable: 1
+        scalingConfig:
+          minSize: 1
+          maxSize: 1
+          desiredSize: 1
