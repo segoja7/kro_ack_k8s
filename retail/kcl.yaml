@@ -1,0 +1,88 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: retailstoresampleappstack.kro.run
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: RetailStoreSampleAppStack
+    spec:
+      name: string
+  resources:
+  - id: vpc
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: VPC
+      metadata:
+        name: vpc-string
+      spec:
+        cidrBlocks:
+        - '10.0.1.0/20'
+        enableDNSHostnames: true
+        enableDNSSupport: true
+        instanceTenancy: default
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+        - key: Name
+          value: vpc-string
+  - id: retailappPrivateSubnetaz1
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: Subnet
+      metadata:
+        name: appPrivateSubnetaz1
+      spec:
+        cidrBlock: '10.0.0.0/24'
+        vpcRef:
+          from:
+            name: vpc-string
+        mapPublicIPOnLaunch: false
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+  - id: retailappPrivateSubnetaz2
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: Subnet
+      metadata:
+        name: appPrivateSubnetaz2
+      spec:
+        cidrBlock: '10.0.1.0/24'
+        vpcRef:
+          from:
+            name: vpc-string
+        mapPublicIPOnLaunch: false
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+  - id: retailpublicSubnetaz1
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: Subnet
+      metadata:
+        name: publicSubnetaz1
+      spec:
+        cidrBlock: '10.0.2.0/24'
+        vpcRef:
+          from:
+            name: vpc-string
+        mapPublicIPOnLaunch: true
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
+  - id: retailpublicSubnetaz2
+    template:
+      apiVersion: ec2.services.k8s.aws/v1alpha1
+      kind: Subnet
+      metadata:
+        name: publicSubnetaz2
+      spec:
+        cidrBlock: '10.0.3.0/24'
+        vpcRef:
+          from:
+            name: vpc-string
+        mapPublicIPOnLaunch: true
+        tags:
+        - key: ManagedBy
+          value: ec2-controller
