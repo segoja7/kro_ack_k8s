@@ -5,7 +5,6 @@ subnet_configs = [
     {"name": "publicsubnetaz2", "cidr": "10.0.3.0/24", "zone": "us-east-1b", "type": "public"}
 ]
 
-
 project_name = "retail"
 
 routeTableConfig = [

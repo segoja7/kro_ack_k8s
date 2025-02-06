@@ -24,14 +24,14 @@ spec = {
     resources = [
         {
             id = "vpc"
-            readyWhen = [
-                r"""${vpc.status.state == "available"}"""
-            ]
+            # readyWhen = [
+            #     r"""${vpc.status.state == "available"}"""
+            # ]
             template = {
                 apiVersion = "ec2.services.k8s.aws/v1alpha1"
                 kind = "VPC"
                 metadata = {
-                    name = "vpc-${schema.spec.name}"
+                    name = "vpc" + my_config.project_name
                 }
                 spec = {
                     cidrBlocks = ["10.0.1.0/20"]
@@ -45,38 +45,71 @@ spec = {
                         }
                         {
                             key = "Name"
-                            value = "vpc-${schema.spec.name}"
+                            value = metadata.name
                         }
                     ]
                 }
             }
         }
     ]
-    resources += [{
+    resources += [{    
         id = subnet_config.name
         template = {
             apiVersion = "ec2.services.k8s.aws/v1alpha1"
             kind = "Subnet"
             metadata = {
-                name = subnet_config.name
+                name = subnet_config.name + my_config.project_name
             }
             spec = {
                 availabilityZone = subnet_config.zone
                 cidrBlock = subnet_config.cidr
                 vpcID = r"""${vpc.status.vpcID}"""
-                mapPublicIPOnLaunch = True if subnet_config.type == "public" else False
-                routeTables = [
-                    if subnet_config.type == "public":
-                        r"""${routetablepublic.status.routeTableID}"""
-                    else:
+                if subnet_config.type == "public":
+                    mapPublicIPOnLaunch = True 
+                    routeTables = [
+                        r"""${routetablepublic.status.routeTableID}""" 
+                    ]
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = apiVersion
+                        }
+                        {
+                            key = "Name"
+                            value = metadata.name
+                        }
+                        {
+                            key = "kubernetes.io/role/elb" 
+                            value = "1"
+                        }
+                        {
+                            key = r"""kubernetes.io/cluster/cluster""" + my_config.project_name + """"""
+                            value = "shared"
+                        }
+                    ]
+                else:
+                    mapPublicIPOnLaunch = False
+                    routeTables = [
                         r"""${routetableprivate.status.routeTableID}"""
-                ]  
-                tags = [
-                    {
-                        key = "ManagedBy"
-                        value = apiVersion
-                    }
-                ]
+                    ]
+                    tags = [
+                        {
+                            key = "ManagedBy"
+                            value = apiVersion
+                        }
+                        {
+                            key = "Name"
+                            value = metadata.name
+                        }
+                        {
+                            key = "kubernetes.io/role/internal-elb"
+                            value = "1"
+                        }
+                        {
+                            key = r"""kubernetes.io/cluster/cluster""" + my_config.project_name + """"""
+                            value = "shared"
+                        }
+                    ]
             }
         }
     } for subnet_config in my_config.subnet_configs]
@@ -105,24 +138,27 @@ spec = {
             }
         }
     ]
-    resources += [{
+    resources += [{               
         id = route_config.name
         template = {
             apiVersion = "ec2.services.k8s.aws/v1alpha1"
             kind = "RouteTable"
             metadata = {
-                name = route_config.name
+                name = route_config.name + my_config.project_name
             }
             spec = {
                 vpcID = r"""${vpc.status.vpcID}"""
                 routes = [
-                    {
-                        destinationCIDRBlock = "0.0.0.0/0"
-                        if route_config.subnet_type == "public":
+                    if route_config.subnet_type == "public":
+                        {
+                            destinationCIDRBlock = "0.0.0.0/0"
                             gatewayID = r"""${internetgateway.status.internetGatewayID}"""
-                        else:
-                            natGatewayID = r"""${natgateway.status.natGatewayID}"""
-                    }
+                        }
+                    else:
+                        {
+                           destinationCIDRBlock = "0.0.0.0/0"
+                           natGatewayID = r"""${natgateway.status.natGatewayID}"""
+                        }
                 ]
                 tags = [
                     {
@@ -138,7 +174,7 @@ spec = {
         }
     } for route_config in my_config.routeTableConfig]
     resources += [
-        {
+        {           
             id = "natgateway"
             template = {
                 apiVersion = "ec2.services.k8s.aws/v1alpha1"
@@ -147,11 +183,7 @@ spec = {
                     name = "natgateway" + my_config.project_name
                 }
                 spec = {
-                    subnetRef = {
-                        from = {
-                            name = my_config.subnet_configs[0].name
-                        }
-                    }
+                    subnetID = r"""${publicsubnetaz1.status.subnetID}"""
                     allocationID = r"""${elasticipaddress.status.allocationID}"""
                     tags = [
                         {
@@ -338,27 +370,22 @@ spec = {
                     }
                     roleARN = r"""${clusterrole.status.ackResourceMetadata.arn}"""
                     resourcesVPCConfig = {
-                        endpointPrivateAccess = False
+                        endpointPrivateAccess = True
                         endpointPublicAccess = True
                         subnetIDs = [
                             r"""${""" + subnet.name + """.status.subnetID}"""
-                            for subnet in my_config.subnet_configs if subnet.type == "public"
-                        ]                
+                            for subnet in my_config.subnet_configs if subnet.type == "private"
+                        ]
                     }
-                    # tags = [
-                    #     {
-                    #         key = "ManagedBy"
-                    #         value = apiVersion
-                    #     }
-                    #     {
-                    #         key = "Name"
-                    #         value = metadata.name
-                    #     }
-                    # ]
+                    tags = {
+                        "ManagedBy" = apiVersion
+                        "Name" =  metadata.name
+                    }
+                    
                 }
             }
         }
-    ]
+    ]    
     resources += [
         {
             id = "clusternodegroup"
@@ -371,10 +398,13 @@ spec = {
                 spec = {
                     name = metadata.name
                     diskSize = 20
+                    instanceTypes = [
+                        "t3.small"
+                    ]
                     clusterName = r"""${cluster.spec.name}"""
                     subnets = [
                         r"""${""" + subnet.name + """.status.subnetID}"""
-                        for subnet in my_config.subnet_configs if subnet.type == "public"
+                        for subnet in my_config.subnet_configs if subnet.type == "private"
                     ]
                     nodeRole = r"""${clusternoderole.status.ackResourceMetadata.arn}"""
                     updateConfig = {
@@ -385,16 +415,10 @@ spec = {
                         maxSize = 1
                         desiredSize = 1
                     }
-                    tags = [
-                        {
-                            key = "ManagedBy"
-                            value = apiVersion
-                        }
-                        {
-                            key = "Name"
-                            value = metadata.name
-                        }
-                    ]
+                    tags = {
+                        "ManagedBy" = apiVersion
+                        "Name" =  metadata.name
+                    }
                 }
             }
         }

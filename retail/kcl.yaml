@@ -13,13 +13,11 @@ spec:
         vpcID: ${vpc.status.vpcID}
   resources:
   - id: vpc
-    readyWhen:
-    - ${vpc.status.state == "available"}
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: VPC
       metadata:
-        name: vpc-string
+        name: vpcretail
       spec:
         cidrBlocks:
         - '10.0.1.0/20'
@@ -30,13 +28,13 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: vpc-string
+          value: vpcretail
   - id: appprivatesubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appprivatesubnetaz1
+        name: appprivatesubnetaz1retail
       spec:
         availabilityZone: us-east-1a
         cidrBlock: '10.0.0.0/24'
@@ -47,12 +45,18 @@ spec:
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
+        - key: Name
+          value: appprivatesubnetaz1retail
+        - key: kubernetes.io/role/internal-elb
+          value: '1'
+        - key: kubernetes.io/cluster/clusterretail
+          value: shared
   - id: appprivatesubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appprivatesubnetaz2
+        name: appprivatesubnetaz2retail
       spec:
         availabilityZone: us-east-1b
         cidrBlock: '10.0.1.0/24'
@@ -63,12 +67,18 @@ spec:
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
+        - key: Name
+          value: appprivatesubnetaz2retail
+        - key: kubernetes.io/role/internal-elb
+          value: '1'
+        - key: kubernetes.io/cluster/clusterretail
+          value: shared
   - id: publicsubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicsubnetaz1
+        name: publicsubnetaz1retail
       spec:
         availabilityZone: us-east-1a
         cidrBlock: '10.0.2.0/24'
@@ -79,12 +89,18 @@ spec:
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
+        - key: Name
+          value: publicsubnetaz1retail
+        - key: kubernetes.io/role/elb
+          value: '1'
+        - key: kubernetes.io/cluster/clusterretail
+          value: shared
   - id: publicsubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicsubnetaz2
+        name: publicsubnetaz2retail
       spec:
         availabilityZone: us-east-1b
         cidrBlock: '10.0.3.0/24'
@@ -95,6 +111,12 @@ spec:
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
+        - key: Name
+          value: publicsubnetaz2retail
+        - key: kubernetes.io/role/elb
+          value: '1'
+        - key: kubernetes.io/cluster/clusterretail
+          value: shared
   - id: internetgateway
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -113,7 +135,7 @@ spec:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: RouteTable
       metadata:
-        name: routetablepublic
+        name: routetablepublicretail
       spec:
         vpcID: ${vpc.status.vpcID}
         routes:
@@ -123,13 +145,13 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: routetablepublic-retail
+          value: routetablepublicretail-retail
   - id: routetableprivate
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: RouteTable
       metadata:
-        name: routetableprivate
+        name: routetableprivateretail
       spec:
         vpcID: ${vpc.status.vpcID}
         routes:
@@ -139,7 +161,7 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: routetableprivate-retail
+          value: routetableprivateretail-retail
   - id: natgateway
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
@@ -147,9 +169,7 @@ spec:
       metadata:
         name: natgatewayretail
       spec:
-        subnetRef:
-          from:
-            name: appprivatesubnetaz1
+        subnetID: ${publicsubnetaz1.status.subnetID}
         allocationID: ${elasticipaddress.status.allocationID}
         tags:
         - key: ManagedBy
@@ -244,11 +264,14 @@ spec:
           authenticationMode: API_AND_CONFIG_MAP
         roleARN: ${clusterrole.status.ackResourceMetadata.arn}
         resourcesVPCConfig:
-          endpointPrivateAccess: false
+          endpointPrivateAccess: true
           endpointPublicAccess: true
           subnetIDs:
-          - ${publicsubnetaz1.status.subnetID}
-          - ${publicsubnetaz2.status.subnetID}
+          - ${appprivatesubnetaz1.status.subnetID}
+          - ${appprivatesubnetaz2.status.subnetID}
+        tags:
+          ManagedBy: eks.services.k8s.aws/v1alpha1
+          Name: clusterretail
   - id: clusternodegroup
     template:
       apiVersion: eks.services.k8s.aws/v1alpha1
@@ -258,10 +281,12 @@ spec:
       spec:
         name: clusternodegroupretail
         diskSize: 20
+        instanceTypes:
+        - t3.small
         clusterName: ${cluster.spec.name}
         subnets:
-        - ${publicsubnetaz1.status.subnetID}
-        - ${publicsubnetaz2.status.subnetID}
+        - ${appprivatesubnetaz1.status.subnetID}
+        - ${appprivatesubnetaz2.status.subnetID}
         nodeRole: ${clusternoderole.status.ackResourceMetadata.arn}
         updateConfig:
           maxUnavailable: 1
@@ -269,3 +294,6 @@ spec:
           minSize: 1
           maxSize: 1
           desiredSize: 1
+        tags:
+          ManagedBy: eks.services.k8s.aws/v1alpha1
+          Name: clusternodegroupretail
