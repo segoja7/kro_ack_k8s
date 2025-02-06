@@ -228,6 +228,7 @@ spec:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                            \"Effect\": \"Allow\",\n                            \"Principal\": {\n                                \"Service\": \"ec2.amazonaws.com\"\n                            },\n                            \"Action\": \"sts:AssumeRole\"\n                            }\n                        ]\n                        }\n                        "
         tags:
         - key: ManagedBy
