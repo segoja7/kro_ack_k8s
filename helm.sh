@@ -39,5 +39,5 @@ echo "Installation process complete."
 
 #tekton secret
 kubectl get secret aws-credentials -n ack-system -o yaml \
-  | sed "s/namespace: ack-system/namespace: tekton-pipelines/" \
+  | sed "s/namespace: ack-system/namespace: tekton-tasks/" \
   | kubectl apply -f -

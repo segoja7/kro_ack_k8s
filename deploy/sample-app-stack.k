@@ -19,13 +19,13 @@ spec = {
   
     resources = [
         {
-            id = "tektontaskauthenticate"
+            id = "authenticateanddeploy"
             template = {
                 apiVersion = "tekton.dev/v1beta1"
                 kind = "Task"
                 metadata = {
-                    name = "authenticate-eks-" + my_config.project_name
-                    namespace = "tekton-pipelines"
+                    name = "authenticate-and-deploy" + my_config.project_name
+                    namespace = "tekton-tasks"
                 }
                 spec = {
                     params = [
@@ -37,36 +37,6 @@ spec = {
                             name = "aws-region"
                             $type = "string"
                         }
-                    ]
-                    workspaces = [
-                        {
-                            name = "aws-credentials"
-                        }
-                    ]
-                    steps = [
-                        {
-                            name = "configure-kubeconfig"
-                            image = "amazon/aws-cli:latest"
-                            script = r"#!/bin/sh\nexport AWS_SHARED_CREDENTIALS_FILE=$(workspaces.aws-credentials.path)/aws-credentials\naws eks update-kubeconfig --name $(params.cluster-name) --region $(params.aws-region)"
-                        }
-                    ]
-                }
-            }
-        }
-    ]
-    
-    resources += [
-        {
-            id = "tektontaskdeployapp"
-            template = {
-                apiVersion = "tekton.dev/v1beta1"
-                kind = "Task"
-                metadata = {
-                    name = "deploy-app-" + my_config.project_name
-                    namespace = "tekton-pipelines"
-                }
-                spec = {
-                    params = [
                         {
                             name = "game-yaml-url"
                             $type = "string"
@@ -77,16 +47,36 @@ spec = {
                             name = "aws-credentials"
                         }
                     ]
+                                                           
                     steps = [
                         {
-                            name = "download-game-yaml"
-                            image = "curlimages/curl:latest"
-                            script = r"#!/bin/sh\necho \"Downloading game.yaml from $(params.game-yaml-url)...\"\ncurl -o /workspace/game.yaml $(params.game-yaml-url)"
-                        }
-                        {
-                            name = "deploy-game"
-                            image = "bitnami/kubectl:latest"
-                            script = r"#!/bin/sh\necho \"Deploying game.yaml to Kubernetes...\"\nkubectl apply -f /workspace/game.yaml"
+                            name = "configure-kubeconfig"
+                            image = "amazon/aws-cli:latest"
+                            script = r"""#!/bin/sh
+                            set -e
+
+                            # Instalar kubectl
+                            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                            chmod +x kubectl
+                            mv kubectl /usr/local/bin/
+
+                            #AWS credentials
+                            export AWS_SHARED_CREDENTIALS_FILE=$(workspaces.aws-credentials.path)/credentials
+                            aws eks update-kubeconfig --name $(params.cluster-name) --region $(params.aws-region)
+                            
+                            #verify cluster connectivity
+                            kubectl get nodes
+
+                            #deploy-game
+                            echo "Deploying game.yaml to Kubernetes..."
+                            kubectl apply -f $(params.game-yaml-url)
+
+                            #retrieve dns alb
+                            kubectl get svc mygame-svc -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+                            """
+
+
+
                         }
                     ]
                 }
@@ -101,7 +91,7 @@ spec = {
                 kind = "Pipeline"
                 metadata = {
                     name = "pipeline-" + my_config.project_name
-                    namespace = "tekton-pipelines"
+                    namespace = "tekton-tasks"
                 }
                 spec = {
                     params = [
@@ -125,9 +115,9 @@ spec = {
                     ]
                     tasks = [
                         {
-                            name = "authenticate-eks-" + my_config.project_name
+                            name = "authenticate-and-deploy" + my_config.project_name
                             taskRef = {
-                                name = "authenticate-eks-" + my_config.project_name
+                                name = "authenticate-and-deploy" + my_config.project_name
                             }
                             params = [
                                 {
@@ -138,20 +128,6 @@ spec = {
                                     name = "aws-region"
                                     value = r"$(params.aws-region)"
                                 }
-                            ]
-                            workspaces = [
-                                {
-                                    name = "aws-credentials"
-                                    workspace = "aws-credentials"
-                                }
-                            ]
-                        }
-                        {
-                            name = "deploy-app-" + my_config.project_name
-                            taskRef = {
-                                name = "deploy-app-" + my_config.project_name
-                            }
-                            params = [
                                 {
                                     name = "game-yaml-url"
                                     value = r"$(params.game-yaml-url)"

@@ -9,13 +9,34 @@ spec:
     spec:
       name: string
   resources:
+  - id: authenticateanddeploy
+    template:
+      apiVersion: tekton.dev/v1beta1
+      kind: Task
+      metadata:
+        name: authenticate-and-deploysegoja7
+        namespace: tekton-tasks
+      spec:
+        params:
+        - name: cluster-name
+          type: string
+        - name: aws-region
+          type: string
+        - name: game-yaml-url
+          type: string
+        workspaces:
+        - name: aws-credentials
+        steps:
+        - name: configure-kubeconfig
+          image: amazon/aws-cli:latest
+          script: "#!/bin/sh\n                            set -e\n\n                            # Instalar kubectl\n                            curl -LO \"https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\"\n                            chmod +x kubectl\n                            mv kubectl /usr/local/bin/\n\n                            #AWS credentials\n                            export AWS_SHARED_CREDENTIALS_FILE=$(workspaces.aws-credentials.path)/credentials\n                            aws eks update-kubeconfig --name $(params.cluster-name) --region $(params.aws-region)\n                            \n                            #verify cluster connectivity\n                            kubectl get nodes\n\n                            #download-game-yaml\n                            echo \"Downloading game.yaml from $(params.game-yaml-url)...\"\n                            curl -o /workspace/game.yaml $(params.game-yaml-url)\n\n                            #deploy-game\n                            echo \"Deploying game.yaml to Kubernetes...\"\n                            kubectl apply -f /workspace/game.yaml\n                            "
   - id: tektonpipeline
     template:
       apiVersion: tekton.dev/v1beta1
       kind: Pipeline
       metadata:
         name: pipeline-segoja7
-        namespace: tekton-pipelines
+        namespace: tekton-tasks
       spec:
         params:
         - name: cluster-name
@@ -27,21 +48,14 @@ spec:
         workspaces:
         - name: aws-credentials
         tasks:
-        - name: authenticate-eks-segoja7
+        - name: authenticate-and-deploysegoja7
           taskRef:
-            name: authenticate-eks-segoja7
+            name: authenticate-and-deploysegoja7
           params:
           - name: cluster-name
             value: $(params.cluster-name)
           - name: aws-region
             value: $(params.aws-region)
-          workspaces:
-          - name: aws-credentials
-            workspace: aws-credentials
-        - name: deploy-app-segoja7
-          taskRef:
-            name: deploy-app-segoja7
-          params:
           - name: game-yaml-url
             value: $(params.game-yaml-url)
           workspaces:

@@ -2,17 +2,17 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   name: deploy-to-eks-run
-  namespace: tekton-pipelines
+  namespace: tekton-tasks
 spec:
   pipelineRef:
-    name: pipeline-segoja7
+    name: pipeline-segoja7    
   params:
     - name: cluster-name
       value: clustersegoja7
     - name: aws-region
       value: us-east-1
     - name: game-yaml-url
-      value: "https://raw.githubusercontent.com/segoja7/kro_ack_k8s/refs/heads/master/deploy/game.yaml"
+      value: https://raw.githubusercontent.com/segoja7/kro_ack_k8s/refs/heads/master/deploy/game.yaml
   workspaces:
     - name: aws-credentials
       secret:

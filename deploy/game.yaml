@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
    name: 2048-pod
+   namespace: default
    labels:
       app: 2048-ws
 spec:
@@ -15,6 +16,7 @@ apiVersion: v1
 kind: Service
 metadata:
    name: mygame-svc
+   namespace: default
 spec:
    selector:
       app: 2048-ws
