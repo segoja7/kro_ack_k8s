@@ -12,7 +12,7 @@ spec:
     - name: aws-region
       value: us-east-1
     - name: game-yaml-url
-      value: "https://raw.githubusercontent.com/kro_ack_k8s/deploy/game.yaml"
+      value: "https://raw.githubusercontent.com/segoja7/kro_ack_k8s/refs/heads/master/deploy/game.yaml"
   workspaces:
     - name: aws-credentials
       secret:
