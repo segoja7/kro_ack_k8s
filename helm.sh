@@ -35,3 +35,9 @@ for SERVICE in "${SERVICES[@]}"; do
 done
 
 echo "Installation process complete."
+
+
+#tekton secret
+kubectl get secret aws-credentials -n ack-system -o yaml \
+  | sed "s/namespace: ack-system/namespace: tekton-pipelines/" \
+  | kubectl apply -f -

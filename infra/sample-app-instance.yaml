@@ -1,0 +1,10 @@
+apiVersion: kro.run/v1alpha1
+kind: InfraSampleAppStack
+metadata:
+  name: infrasampleappstack
+spec:
+  name: infrasampleappstack
+
+
+
+  

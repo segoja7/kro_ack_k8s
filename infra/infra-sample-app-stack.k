@@ -5,13 +5,13 @@ apiVersion = "kro.run/v1alpha1"
 kind = "ResourceGraphDefinition"
 
 metadata = {
-    name = "retailstoresampleappstack.kro.run"
+    name = "infrasampleappstack.kro.run"
 }
 
 spec = {
     schema = {
         apiVersion = "v1alpha1"
-        kind = "RetailStoreSampleAppStack"
+        kind = "InfraSampleAppStack"
         spec = {
             name = "string"
         }
@@ -423,6 +423,6 @@ spec = {
                 }
             }
         }
-    ]
+    ]                
 }
 

@@ -1,11 +1,11 @@
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
-  name: retailstoresampleappstack.kro.run
+  name: infrasampleappstack.kro.run
 spec:
   schema:
     apiVersion: v1alpha1
-    kind: RetailStoreSampleAppStack
+    kind: InfraSampleAppStack
     spec:
       name: string
     status:
@@ -17,7 +17,7 @@ spec:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: VPC
       metadata:
-        name: vpcretail
+        name: vpcsegoja7
       spec:
         cidrBlocks:
         - '10.0.1.0/20'
@@ -28,13 +28,13 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: vpcretail
+          value: vpcsegoja7
   - id: appprivatesubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appprivatesubnetaz1retail
+        name: appprivatesubnetaz1segoja7
       spec:
         availabilityZone: us-east-1a
         cidrBlock: '10.0.0.0/24'
@@ -46,17 +46,17 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: appprivatesubnetaz1retail
+          value: appprivatesubnetaz1segoja7
         - key: kubernetes.io/role/internal-elb
           value: '1'
-        - key: kubernetes.io/cluster/clusterretail
+        - key: kubernetes.io/cluster/clustersegoja7
           value: shared
   - id: appprivatesubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: appprivatesubnetaz2retail
+        name: appprivatesubnetaz2segoja7
       spec:
         availabilityZone: us-east-1b
         cidrBlock: '10.0.1.0/24'
@@ -68,17 +68,17 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: appprivatesubnetaz2retail
+          value: appprivatesubnetaz2segoja7
         - key: kubernetes.io/role/internal-elb
           value: '1'
-        - key: kubernetes.io/cluster/clusterretail
+        - key: kubernetes.io/cluster/clustersegoja7
           value: shared
   - id: publicsubnetaz1
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicsubnetaz1retail
+        name: publicsubnetaz1segoja7
       spec:
         availabilityZone: us-east-1a
         cidrBlock: '10.0.2.0/24'
@@ -90,17 +90,17 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: publicsubnetaz1retail
+          value: publicsubnetaz1segoja7
         - key: kubernetes.io/role/elb
           value: '1'
-        - key: kubernetes.io/cluster/clusterretail
+        - key: kubernetes.io/cluster/clustersegoja7
           value: shared
   - id: publicsubnetaz2
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: Subnet
       metadata:
-        name: publicsubnetaz2retail
+        name: publicsubnetaz2segoja7
       spec:
         availabilityZone: us-east-1b
         cidrBlock: '10.0.3.0/24'
@@ -112,30 +112,30 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: publicsubnetaz2retail
+          value: publicsubnetaz2segoja7
         - key: kubernetes.io/role/elb
           value: '1'
-        - key: kubernetes.io/cluster/clusterretail
+        - key: kubernetes.io/cluster/clustersegoja7
           value: shared
   - id: internetgateway
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: InternetGateway
       metadata:
-        name: internetgatewayretail
+        name: internetgatewaysegoja7
       spec:
         vpc: ${vpc.status.vpcID}
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: internetgatewayretail
+          value: internetgatewaysegoja7
   - id: routetablepublic
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: RouteTable
       metadata:
-        name: routetablepublicretail
+        name: routetablepublicsegoja7
       spec:
         vpcID: ${vpc.status.vpcID}
         routes:
@@ -145,13 +145,13 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: routetablepublicretail-retail
+          value: routetablepublicsegoja7-segoja7
   - id: routetableprivate
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: RouteTable
       metadata:
-        name: routetableprivateretail
+        name: routetableprivatesegoja7
       spec:
         vpcID: ${vpc.status.vpcID}
         routes:
@@ -161,13 +161,13 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: routetableprivateretail-retail
+          value: routetableprivatesegoja7-segoja7
   - id: natgateway
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: NATGateway
       metadata:
-        name: natgatewayretail
+        name: natgatewaysegoja7
       spec:
         subnetID: ${publicsubnetaz1.status.subnetID}
         allocationID: ${elasticipaddress.status.allocationID}
@@ -175,27 +175,27 @@ spec:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: natgatewayretail
+          value: natgatewaysegoja7
   - id: elasticipaddress
     template:
       apiVersion: ec2.services.k8s.aws/v1alpha1
       kind: ElasticIPAddress
       metadata:
-        name: elasticipaddressretail
+        name: elasticipaddresssegoja7
       spec:
         tags:
         - key: ManagedBy
           value: ec2.services.k8s.aws/v1alpha1
         - key: Name
-          value: elasticipaddressretail
+          value: elasticipaddresssegoja7
   - id: clusterrole
     template:
       apiVersion: iam.services.k8s.aws/v1alpha1
       kind: Role
       metadata:
-        name: clusterroleretail
+        name: clusterrolesegoja7
       spec:
-        name: clusterroleretail
+        name: clusterrolesegoja7
         policies:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         assumeRolePolicyDocument: |-
@@ -215,15 +215,15 @@ spec:
         - key: ManagedBy
           value: iam.services.k8s.aws/v1alpha1
         - key: Name
-          value: clusterroleretail
+          value: clusterrolesegoja7
   - id: clusternoderole
     template:
       apiVersion: iam.services.k8s.aws/v1alpha1
       kind: Role
       metadata:
-        name: clusternoderoleretail
+        name: clusternoderolesegoja7
       spec:
-        name: clusternoderoleretail
+        name: clusternoderolesegoja7
         policies:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
@@ -234,15 +234,15 @@ spec:
         - key: ManagedBy
           value: iam.services.k8s.aws/v1alpha1
         - key: Name
-          value: clusternoderoleretail
+          value: clusternoderolesegoja7
   - id: clusteradminrole
     template:
       apiVersion: iam.services.k8s.aws/v1alpha1
       kind: Role
       metadata:
-        name: clusteradminroleretail
+        name: clusteradminrolesegoja7
       spec:
-        name: clusteradminroleretail
+        name: clusteradminrolesegoja7
         policies:
         - arn:aws:iam::aws:policy/AdministratorAccess
         assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                                \"Sid\": \"AllowEksAuthToAssumeRoleForPodIdentity\",\n                                \"Effect\": \"Allow\",\n                                \"Principal\": {\n                                    \"Service\": \"pods.eks.amazonaws.com\"\n                                },\n                                \"Action\": [\n                                    \"sts:AssumeRole\",\n                                    \"sts:TagSession\"\n                                ]\n                            }\n                        ]\n                        }\n                        "
@@ -250,7 +250,7 @@ spec:
         - key: ManagedBy
           value: iam.services.k8s.aws/v1alpha1
         - key: Name
-          value: clusteradminroleretail
+          value: clusteradminrolesegoja7
   - id: cluster
     readyWhen:
     - ${cluster.status.status == "ACTIVE"}
@@ -258,9 +258,9 @@ spec:
       apiVersion: eks.services.k8s.aws/v1alpha1
       kind: Cluster
       metadata:
-        name: clusterretail
+        name: clustersegoja7
       spec:
-        name: clusterretail
+        name: clustersegoja7
         accessConfig:
           authenticationMode: API_AND_CONFIG_MAP
         roleARN: ${clusterrole.status.ackResourceMetadata.arn}
@@ -272,15 +272,15 @@ spec:
           - ${appprivatesubnetaz2.status.subnetID}
         tags:
           ManagedBy: eks.services.k8s.aws/v1alpha1
-          Name: clusterretail
+          Name: clustersegoja7
   - id: clusternodegroup
     template:
       apiVersion: eks.services.k8s.aws/v1alpha1
       kind: Nodegroup
       metadata:
-        name: clusternodegroupretail
+        name: clusternodegroupsegoja7
       spec:
-        name: clusternodegroupretail
+        name: clusternodegroupsegoja7
         diskSize: 20
         instanceTypes:
         - t3.small
@@ -297,4 +297,4 @@ spec:
           desiredSize: 1
         tags:
           ManagedBy: eks.services.k8s.aws/v1alpha1
-          Name: clusternodegroupretail
+          Name: clusternodegroupsegoja7
