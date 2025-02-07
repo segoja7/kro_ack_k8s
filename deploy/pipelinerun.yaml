@@ -5,14 +5,14 @@ metadata:
   namespace: tekton-pipelines
 spec:
   pipelineRef:
-    name: pipeline-mi-cluster-eks
+    name: pipeline-segoja7
   params:
     - name: cluster-name
       value: clustersegoja7
     - name: aws-region
       value: us-east-1
     - name: game-yaml-url
-      value: "https://raw.githubusercontent.com/TU_REPO/game.yaml"
+      value: "https://raw.githubusercontent.com/kro_ack_k8s/deploy/game.yaml"
   workspaces:
     - name: aws-credentials
       secret:
