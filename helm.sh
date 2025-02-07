@@ -36,8 +36,22 @@ done
 
 echo "Installation process complete."
 
+kubectl create ns tekton-tasks
 
 #tekton secret
 kubectl get secret aws-credentials -n ack-system -o yaml \
   | sed "s/namespace: ack-system/namespace: tekton-tasks/" \
   | kubectl apply -f -
+
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+
+
+export KRO_VERSION=$(curl -sL \
+    https://api.github.com/repos/kro-run/kro/releases/latest | \
+    jq -r '.tag_name | ltrimstr("v")'
+  )
+
+helm install kro oci://ghcr.io/kro-run/kro/kro \
+  --namespace kro \
+  --create-namespace \
+  --version=${KRO_VERSION}

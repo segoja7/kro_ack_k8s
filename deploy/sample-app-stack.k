@@ -72,7 +72,7 @@ spec = {
                             kubectl apply -f $(params.game-yaml-url)
 
                             #retrieve dns alb
-                            kubectl get svc mygame-svc -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+                            kubectl get svc -n default
                             """
 
 
