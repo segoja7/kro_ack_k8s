@@ -1,5 +1,20 @@
 #!/bin/bash
 
+export KRO_VERSION=$(curl -sL \
+    https://api.github.com/repos/kro-run/kro/releases/latest | \
+    jq -r '.tag_name | ltrimstr("v")'
+  )
+
+helm install kro oci://ghcr.io/kro-run/kro/kro \
+  --namespace kro \
+  --create-namespace \
+  --version=${KRO_VERSION}
+  
+kubectl create ns ack-system
+kubectl create secret generic aws-credentials -n ack-system --from-file=credentials=./profile.txt
+aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin public.ecr.aws
+
+
 # Define the AWS region
 export CONTROLLER_REGION=us-east-1
 
@@ -46,12 +61,3 @@ kubectl get secret aws-credentials -n ack-system -o yaml \
 kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
 
 
-export KRO_VERSION=$(curl -sL \
-    https://api.github.com/repos/kro-run/kro/releases/latest | \
-    jq -r '.tag_name | ltrimstr("v")'
-  )
-
-helm install kro oci://ghcr.io/kro-run/kro/kro \
-  --namespace kro \
-  --create-namespace \
-  --version=${KRO_VERSION}

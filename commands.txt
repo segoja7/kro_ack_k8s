@@ -1,0 +1,43 @@
+export KRO_VERSION=$(curl -sL \
+    https://api.github.com/repos/kro-run/kro/releases/latest | \
+    jq -r '.tag_name | ltrimstr("v")'
+  )
+
+helm install kro oci://ghcr.io/kro-run/kro/kro \
+  --namespace kro \
+  --create-namespace \
+  --version=${KRO_VERSION}
+-----  
+kubectl create ns ack-system
+kubectl create secret generic aws-credentials -n ack-system --from-file=credentials=./profile.txt
+aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin public.ecr.aws
+-----
+CONTROLLER_REGION=us-east-1; \
+SERVICES=("iam" "ec2" "eks"); \
+for SERVICE in "${SERVICES[@]}"; do \
+  RELEASE_VERSION=$(curl -sL https://api.github.com/repos/aws-controllers-k8s/${SERVICE}-controller/releases/latest | jq -r '.tag_name | ltrimstr("v")'); \
+  if [[ -z "$RELEASE_VERSION" ]]; then \
+    echo "Error: Could not retrieve release version for ${SERVICE}."; \
+    continue; \
+  fi; \
+  helm install --create-namespace -n ack-system \
+    oci://public.ecr.aws/aws-controllers-k8s/${SERVICE}-chart \
+    --version="${RELEASE_VERSION}" \
+    --generate-name \
+    --set aws.region="${CONTROLLER_REGION}" \
+    --set aws.credentials.secretName=aws-credentials \
+    --set aws.credentials.profile=default; \
+  if [[ $? -eq 0 ]]; then \
+    echo "Successfully installed ${SERVICE} controller."; \
+  else \
+    echo "Error: Failed to install ${SERVICE} controller."; \
+  fi; \
+done
+
+----
+kubectl create ns tekton-tasks
+kubectl get secret aws-credentials -n ack-system -o yaml \
+  | sed "s/namespace: ack-system/namespace: tekton-tasks/" \
+  | kubectl apply -f -
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+----
