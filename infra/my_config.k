@@ -13,6 +13,6 @@ routeTableConfig = [
 ]
 
 additional_tags = [
-    {"key": "Owner", "value": "segoja7"},
+    {"key": "Owner", "value": project_name},
     {"key": "Environment", "value": "dev"}
 ]
