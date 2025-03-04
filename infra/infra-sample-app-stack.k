@@ -38,7 +38,7 @@ spec = {
                     enableDNSHostnames = True
                     enableDNSSupport = True
                     instanceTenancy = "default"
-                    tags = my_config.tags + [
+                    tags = my_config.additional_tags + [
                         {
                             key = "ManagedBy"
                             value = apiVersion

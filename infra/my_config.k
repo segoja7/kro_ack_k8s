@@ -12,7 +12,7 @@ routeTableConfig = [
     {"name": "routetableprivate", "subnet_type": "private"}
 ]
 
-tags = [
+additional_tags = [
     {"key": "Owner", "value": "segoja7"},
     {"key": "Environment", "value": "dev"}
 ]
