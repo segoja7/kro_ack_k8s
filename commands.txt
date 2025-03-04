@@ -8,6 +8,11 @@ helm install kro oci://ghcr.io/kro-run/kro/kro \
   --create-namespace \
   --version=${KRO_VERSION}
 -----  
+
+[default]
+aws_access_key_id = <access_key_id>
+aws_secret_access_key = <secret_access_key>
+
 kubectl create ns ack-system
 kubectl create secret generic aws-credentials -n ack-system --from-file=credentials=./profile.txt
 aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin public.ecr.aws

@@ -1,300 +1,84 @@
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
-  name: infrasampleappstack.kro.run
+  name: my-application
 spec:
+  # kro uses this simple schema to create your CRD schema and apply it
+  # The schema defines what users can provide when they instantiate the RGD (create an instance).
   schema:
     apiVersion: v1alpha1
-    kind: InfraSampleAppStack
+    kind: Application
     spec:
+      # Spec fields that users can provide.
       name: string
+      image: string | default="nginx"
+      ingress:
+        enabled: boolean | default=false
     status:
-      networkingInfo:
-        vpcID: ${vpc.status.vpcID}
+      # Fields the controller will inject into instances status.
+      deploymentConditions: ${deployment.status.conditions}
+      availableReplicas: ${deployment.status.availableReplicas}
+
+  # Define the resources this API will manage.
   resources:
-  - id: vpc
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: VPC
-      metadata:
-        name: vpcsegoja7
-      spec:
-        cidrBlocks:
-        - '10.0.1.0/20'
-        enableDNSHostnames: true
-        enableDNSSupport: true
-        instanceTenancy: default
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: vpcsegoja7
-  - id: appprivatesubnetaz1
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: Subnet
-      metadata:
-        name: appprivatesubnetaz1segoja7
-      spec:
-        availabilityZone: us-east-1a
-        cidrBlock: '10.0.0.0/24'
-        vpcID: ${vpc.status.vpcID}
-        mapPublicIPOnLaunch: false
-        routeTables:
-        - ${routetableprivate.status.routeTableID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: appprivatesubnetaz1segoja7
-        - key: kubernetes.io/role/internal-elb
-          value: '1'
-        - key: kubernetes.io/cluster/clustersegoja7
-          value: shared
-  - id: appprivatesubnetaz2
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: Subnet
-      metadata:
-        name: appprivatesubnetaz2segoja7
-      spec:
-        availabilityZone: us-east-1b
-        cidrBlock: '10.0.1.0/24'
-        vpcID: ${vpc.status.vpcID}
-        mapPublicIPOnLaunch: false
-        routeTables:
-        - ${routetableprivate.status.routeTableID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: appprivatesubnetaz2segoja7
-        - key: kubernetes.io/role/internal-elb
-          value: '1'
-        - key: kubernetes.io/cluster/clustersegoja7
-          value: shared
-  - id: publicsubnetaz1
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: Subnet
-      metadata:
-        name: publicsubnetaz1segoja7
-      spec:
-        availabilityZone: us-east-1a
-        cidrBlock: '10.0.2.0/24'
-        vpcID: ${vpc.status.vpcID}
-        mapPublicIPOnLaunch: true
-        routeTables:
-        - ${routetablepublic.status.routeTableID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: publicsubnetaz1segoja7
-        - key: kubernetes.io/role/elb
-          value: '1'
-        - key: kubernetes.io/cluster/clustersegoja7
-          value: shared
-  - id: publicsubnetaz2
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: Subnet
-      metadata:
-        name: publicsubnetaz2segoja7
-      spec:
-        availabilityZone: us-east-1b
-        cidrBlock: '10.0.3.0/24'
-        vpcID: ${vpc.status.vpcID}
-        mapPublicIPOnLaunch: true
-        routeTables:
-        - ${routetablepublic.status.routeTableID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: publicsubnetaz2segoja7
-        - key: kubernetes.io/role/elb
-          value: '1'
-        - key: kubernetes.io/cluster/clustersegoja7
-          value: shared
-  - id: internetgateway
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: InternetGateway
-      metadata:
-        name: internetgatewaysegoja7
-      spec:
-        vpc: ${vpc.status.vpcID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: internetgatewaysegoja7
-  - id: routetablepublic
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: RouteTable
-      metadata:
-        name: routetablepublicsegoja7
-      spec:
-        vpcID: ${vpc.status.vpcID}
-        routes:
-        - destinationCIDRBlock: '0.0.0.0/0'
-          gatewayID: ${internetgateway.status.internetGatewayID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: routetablepublicsegoja7-segoja7
-  - id: routetableprivate
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: RouteTable
-      metadata:
-        name: routetableprivatesegoja7
-      spec:
-        vpcID: ${vpc.status.vpcID}
-        routes:
-        - destinationCIDRBlock: '0.0.0.0/0'
-          natGatewayID: ${natgateway.status.natGatewayID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: routetableprivatesegoja7-segoja7
-  - id: natgateway
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: NATGateway
-      metadata:
-        name: natgatewaysegoja7
-      spec:
-        subnetID: ${publicsubnetaz1.status.subnetID}
-        allocationID: ${elasticipaddress.status.allocationID}
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: natgatewaysegoja7
-  - id: elasticipaddress
-    template:
-      apiVersion: ec2.services.k8s.aws/v1alpha1
-      kind: ElasticIPAddress
-      metadata:
-        name: elasticipaddresssegoja7
-      spec:
-        tags:
-        - key: ManagedBy
-          value: ec2.services.k8s.aws/v1alpha1
-        - key: Name
-          value: elasticipaddresssegoja7
-  - id: clusterrole
-    template:
-      apiVersion: iam.services.k8s.aws/v1alpha1
-      kind: Role
-      metadata:
-        name: clusterrolesegoja7
-      spec:
-        name: clusterrolesegoja7
-        policies:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        assumeRolePolicyDocument: |-
-          {
-                                  "Version": "2012-10-17",
-                                  "Statement": [
-                                    {
-                                      "Effect": "Allow",
-                                      "Principal": {
-                                        "Service": "eks.amazonaws.com"
-                                      },
-                                      "Action": "sts:AssumeRole"
-                                    }
-                                  ]
-                                }
-        tags:
-        - key: ManagedBy
-          value: iam.services.k8s.aws/v1alpha1
-        - key: Name
-          value: clusterrolesegoja7
-  - id: clusternoderole
-    template:
-      apiVersion: iam.services.k8s.aws/v1alpha1
-      kind: Role
-      metadata:
-        name: clusternoderolesegoja7
-      spec:
-        name: clusternoderolesegoja7
-        policies:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                            \"Effect\": \"Allow\",\n                            \"Principal\": {\n                                \"Service\": \"ec2.amazonaws.com\"\n                            },\n                            \"Action\": \"sts:AssumeRole\"\n                            }\n                        ]\n                        }\n                        "
-        tags:
-        - key: ManagedBy
-          value: iam.services.k8s.aws/v1alpha1
-        - key: Name
-          value: clusternoderolesegoja7
-  - id: clusteradminrole
-    template:
-      apiVersion: iam.services.k8s.aws/v1alpha1
-      kind: Role
-      metadata:
-        name: clusteradminrolesegoja7
-      spec:
-        name: clusteradminrolesegoja7
-        policies:
-        - arn:aws:iam::aws:policy/AdministratorAccess
-        assumeRolePolicyDocument: "{\n                        \"Version\": \"2012-10-17\",\n                        \"Statement\": [\n                            {\n                                \"Sid\": \"AllowEksAuthToAssumeRoleForPodIdentity\",\n                                \"Effect\": \"Allow\",\n                                \"Principal\": {\n                                    \"Service\": \"pods.eks.amazonaws.com\"\n                                },\n                                \"Action\": [\n                                    \"sts:AssumeRole\",\n                                    \"sts:TagSession\"\n                                ]\n                            }\n                        ]\n                        }\n                        "
-        tags:
-        - key: ManagedBy
-          value: iam.services.k8s.aws/v1alpha1
-        - key: Name
-          value: clusteradminrolesegoja7
-  - id: cluster
-    readyWhen:
-    - ${cluster.status.status == "ACTIVE"}
-    template:
-      apiVersion: eks.services.k8s.aws/v1alpha1
-      kind: Cluster
-      metadata:
-        name: clustersegoja7
-      spec:
-        name: clustersegoja7
-        accessConfig:
-          authenticationMode: API_AND_CONFIG_MAP
-        roleARN: ${clusterrole.status.ackResourceMetadata.arn}
-        resourcesVPCConfig:
-          endpointPrivateAccess: true
-          endpointPublicAccess: true
-          subnetIDs:
-          - ${appprivatesubnetaz1.status.subnetID}
-          - ${appprivatesubnetaz2.status.subnetID}
-        tags:
-          ManagedBy: eks.services.k8s.aws/v1alpha1
-          Name: clustersegoja7
-  - id: clusternodegroup
-    template:
-      apiVersion: eks.services.k8s.aws/v1alpha1
-      kind: Nodegroup
-      metadata:
-        name: clusternodegroupsegoja7
-      spec:
-        name: clusternodegroupsegoja7
-        diskSize: 20
-        instanceTypes:
-        - t3.small
-        clusterName: ${cluster.spec.name}
-        subnets:
-        - ${appprivatesubnetaz1.status.subnetID}
-        - ${appprivatesubnetaz2.status.subnetID}
-        nodeRole: ${clusternoderole.status.ackResourceMetadata.arn}
-        updateConfig:
-          maxUnavailable: 1
-        scalingConfig:
-          minSize: 1
-          maxSize: 1
-          desiredSize: 1
-        tags:
-          ManagedBy: eks.services.k8s.aws/v1alpha1
-          Name: clusternodegroupsegoja7
+    - id: deployment
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${schema.spec.name} # Use the name provided by user
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: ${schema.spec.name}
+          template:
+            metadata:
+              labels:
+                app: ${schema.spec.name}
+            spec:
+              containers:
+                - name: ${schema.spec.name}
+                  image: ${schema.spec.image} # Use the image provided by user
+                  ports:
+                    - containerPort: 80
+
+    - id: service
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${schema.spec.name}-service
+        spec:
+          selector: ${deployment.spec.selector.matchLabels} # Use the deployment selector
+          ports:
+            - protocol: TCP
+              port: 80
+              targetPort: 80
+
+    - id: ingress
+      includeWhen:
+        - ${schema.spec.ingress.enabled} # Only include if the user wants to create an Ingress
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: ${schema.spec.name}-ingress
+          annotations:
+            kubernetes.io/ingress.class: alb
+            alb.ingress.kubernetes.io/scheme: internet-facing
+            alb.ingress.kubernetes.io/target-type: ip
+            alb.ingress.kubernetes.io/healthcheck-path: /health
+            alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+            alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=60
+        spec:
+          rules:
+            - http:
+                paths:
+                  - path: "/"
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: ${service.metadata.name} # Use the service name
+                        port:
+                          number: 80

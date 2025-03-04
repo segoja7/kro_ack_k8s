@@ -1,10 +1,6 @@
 apiVersion: kro.run/v1alpha1
 kind: InfraSampleAppStack
 metadata:
-  name: infrasampleappstack
+  name: my-infra-instance
 spec:
-  name: infrasampleappstack
-
-
-
-  
+  name: my-awesome-infra
