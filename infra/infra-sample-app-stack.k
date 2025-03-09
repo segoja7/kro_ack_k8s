@@ -171,7 +171,7 @@ spec = {
                     }
                     {
                         key = "Name"
-                        value = metadata.name + "-" + my_config.project_name
+                        value = metadata.name
                     }
                 ]
             }
