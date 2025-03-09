@@ -87,7 +87,5 @@ resources += [{
 } for subnet_config in my_config.subnet_configs]
 ```
 
-## Conclusion
-
-This example demonstrates a modern and efficient approach to Kubernetes deployments on AWS. By leveraging Kro, ACK, and KCL, you can significantly reduce complexity, improve maintainability, and boost productivity.  Refer to the blog post for a comprehensive walkthrough.
+This example demonstrates a modern and efficient approach to Kubernetes deployments on AWS. By leveraging Kro, ACK, and KCL, you can significantly reduce complexity, improve maintainability, and boost productivity.  Refer to the [blog](https://dev.to/segoja7/creating-apis-with-aws-controllers-for-kubernetes-ack-and-kube-resource-orchestratorkro-using-3hb0) post for a comprehensive walkthrough.
 ```
